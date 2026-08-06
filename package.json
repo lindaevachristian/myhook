@@ -1,7 +1,7 @@
 {
   "name": "proxy",
   "version": "1.0.0",
-  "description": "WebSocket to TCP Proxy with KV KUNE",
+  "description": "WebSocket to TCP Proxy with KV",
   "main": "app.js",
   "scripts": {
     "start": "node app.js",
