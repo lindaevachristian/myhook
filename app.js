@@ -1,3 +1,4 @@
+// app.js - Fixed Version
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
@@ -5,8 +6,7 @@ export default {
     
     // Welcome page
     if (!path || path === '') {
-      // Ambil statistik dari KV
-      let stats = await env.KUNE.get('stats', 'json') || { 
+      let stats = await env.YUMI.get('stats', 'json') || { 
         total_connections: 0,
         active_connections: 0
       };
@@ -16,11 +16,10 @@ export default {
         `📊 Statistics:\n` +
         `Total Connections: ${stats.total_connections}\n` +
         `Active Connections: ${stats.active_connections}\n` +
-        `KV Namespace: KUNE (Connected)\n`,
+        `KV Namespace: YUMI (Connected)\n`,
         { 
           headers: { 
-            'Content-Type': 'text/plain',
-            'X-KV-Status': 'Connected'
+            'Content-Type': 'text/plain'
           }
         }
       );
@@ -37,13 +36,12 @@ export default {
         }
 
         // Update stats di KV
-        let stats = await env.KUNE.get('stats', 'json') || {
+        let stats = await env.YUMI.get('stats', 'json') || {
           total_connections: 0,
           active_connections: 0,
           connections: {}
         };
         
-        // Generate connection ID
         const connId = crypto.randomUUID();
         stats.total_connections += 1;
         stats.active_connections += 1;
@@ -53,7 +51,7 @@ export default {
           connected_at: new Date().toISOString()
         };
         
-        await env.KUNE.put('stats', JSON.stringify(stats));
+        await env.YUMI.put('stats', JSON.stringify(stats));
 
         const pair = new WebSocketPair();
         const [client, server] = Object.values(pair);
@@ -72,7 +70,7 @@ export default {
           // Update stats on error
           stats.active_connections -= 1;
           delete stats.connections[connId];
-          await env.KUNE.put('stats', JSON.stringify(stats));
+          await env.YUMI.put('stats', JSON.stringify(stats));
           
           server.close(1011, err.message);
           return new Response(`Failed: ${err.message}`, { status: 502 });
@@ -114,14 +112,22 @@ async function connectTCP(host, port) {
 
 function handleProxy(ws, tcp, host, port, connId, env) {
   let closed = false;
+  let pingInterval = null;
 
+  // Function to close all connections
   const closeAll = async () => {
     if (closed) return;
     closed = true;
     
+    // Clear ping interval
+    if (pingInterval) {
+      clearInterval(pingInterval);
+      pingInterval = null;
+    }
+    
     // Update KV stats
     try {
-      let stats = await env.KUNE.get('stats', 'json') || {
+      let stats = await env.YUMI.get('stats', 'json') || {
         total_connections: 0,
         active_connections: 0,
         connections: {}
@@ -131,9 +137,9 @@ function handleProxy(ws, tcp, host, port, connId, env) {
       if (stats.active_connections < 0) stats.active_connections = 0;
       delete stats.connections[connId];
       
-      await env.KUNE.put('stats', JSON.stringify(stats));
+      await env.YUMI.put('stats', JSON.stringify(stats));
     } catch (e) {
-      console.error('Failed to update KV:', e);
+      // Ignore KV errors
     }
     
     try { if (ws.readyState === 1) ws.close(); } catch (e) {}
@@ -191,13 +197,13 @@ function handleProxy(ws, tcp, host, port, connId, env) {
   if (tcp.onerror) tcp.onerror = () => closeAll();
 
   // Keep alive
-  const ping = setInterval(() => {
-    if (!closed && ws.readyState === 1) ws.ping();
+  pingInterval = setInterval(() => {
+    if (!closed && ws.readyState === 1) {
+      try {
+        ws.ping();
+      } catch (e) {
+        closeAll();
+      }
+    }
   }, 25000);
-
-  const originalClose = closeAll;
-  closeAll = () => {
-    clearInterval(ping);
-    originalClose();
-  };
 }
