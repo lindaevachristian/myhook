@@ -6,5 +6,5 @@ compatibility_flags = ["experimental:connect"]
 
 # Binding KV YUMI
 [[kv_namespaces]]
-binding = "KUNE"  # Nama yang akan digunakan di kode
+binding = "YUMI"  # Nama yang akan digunakan di kode
 id = "0d31c8859f8d454fb8bf4be3c011a80b"       # ID KV namespace di Cloudflare
