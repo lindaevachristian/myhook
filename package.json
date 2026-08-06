@@ -1,0 +1,17 @@
+{
+  "name": "proxy",
+  "version": "1.0.0",
+  "description": "WebSocket to TCP Proxy with KV KUNE",
+  "main": "app.js",
+  "scripts": {
+    "start": "node app.js",
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy"
+  },
+  "dependencies": {
+    "ws": "^8.18.3"
+  },
+  "devDependencies": {
+    "wrangler": "^3.0.0"
+  }
+}
