@@ -1,4 +1,3 @@
-// app.js - Dengan KV YUMI
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
@@ -7,7 +6,7 @@ export default {
     // Welcome page
     if (!path || path === '') {
       // Ambil statistik dari KV
-      let stats = await env.YUMI.get('stats', 'json') || { 
+      let stats = await env.KUNE.get('stats', 'json') || { 
         total_connections: 0,
         active_connections: 0
       };
@@ -17,7 +16,7 @@ export default {
         `📊 Statistics:\n` +
         `Total Connections: ${stats.total_connections}\n` +
         `Active Connections: ${stats.active_connections}\n` +
-        `KV Namespace: YUMI (Connected)\n`,
+        `KV Namespace: KUNE (Connected)\n`,
         { 
           headers: { 
             'Content-Type': 'text/plain',
@@ -38,7 +37,7 @@ export default {
         }
 
         // Update stats di KV
-        let stats = await env.YUMI.get('stats', 'json') || {
+        let stats = await env.KUNE.get('stats', 'json') || {
           total_connections: 0,
           active_connections: 0,
           connections: {}
@@ -54,7 +53,7 @@ export default {
           connected_at: new Date().toISOString()
         };
         
-        await env.YUMI.put('stats', JSON.stringify(stats));
+        await env.KUNE.put('stats', JSON.stringify(stats));
 
         const pair = new WebSocketPair();
         const [client, server] = Object.values(pair);
@@ -73,7 +72,7 @@ export default {
           // Update stats on error
           stats.active_connections -= 1;
           delete stats.connections[connId];
-          await env.YUMI.put('stats', JSON.stringify(stats));
+          await env.KUNE.put('stats', JSON.stringify(stats));
           
           server.close(1011, err.message);
           return new Response(`Failed: ${err.message}`, { status: 502 });
@@ -122,7 +121,7 @@ function handleProxy(ws, tcp, host, port, connId, env) {
     
     // Update KV stats
     try {
-      let stats = await env.YUMI.get('stats', 'json') || {
+      let stats = await env.KUNE.get('stats', 'json') || {
         total_connections: 0,
         active_connections: 0,
         connections: {}
@@ -132,7 +131,7 @@ function handleProxy(ws, tcp, host, port, connId, env) {
       if (stats.active_connections < 0) stats.active_connections = 0;
       delete stats.connections[connId];
       
-      await env.YUMI.put('stats', JSON.stringify(stats));
+      await env.KUNE.put('stats', JSON.stringify(stats));
     } catch (e) {
       console.error('Failed to update KV:', e);
     }
